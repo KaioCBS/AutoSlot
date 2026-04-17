@@ -9,5 +9,5 @@ public class Pagamento
     public Funcionario Funcionario { get; set; } = null!;
     public decimal ValorCobrado { get; set; }
     public int TempoMinutos { get; set; }
-    public DateTime RegistradoEm { get; set; } = DateTime.Now;
+    public DateTime RegistradoEm { get; set; } = DateTime.UtcNow; // ← mudou
 }
