@@ -8,5 +8,5 @@ public class Funcionario
     public string SenhaHash { get; set; } = string.Empty;
     public string NivelAcesso { get; set; } = string.Empty;
     public bool Ativo { get; set; } = true;
-    public DateTime CriadoEm { get; set; } = DateTime.UtcNow; // ← mudou
+    public DateTime CriadoEm { get; set; } = DateTime.UtcNow; 
 }

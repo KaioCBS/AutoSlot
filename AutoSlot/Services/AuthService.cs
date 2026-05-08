@@ -34,7 +34,7 @@ public class AuthService
         {
             Nome = nome,
             Email = email,
-            SenhaHash = BCrypt.Net.BCrypt.HashPassword(senha), // RNF02: hash da senha
+            SenhaHash = BCrypt.Net.BCrypt.HashPassword(senha), 
             NivelAcesso = nivelAcesso,
             Ativo = true,
             CriadoEm = DateTime.UtcNow // ← mudou
