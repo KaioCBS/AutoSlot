@@ -1,3 +1,4 @@
 <Solution>
+  <Project Path="AutoSlot.Application/AutoSlot.Application.csproj" Id="0e185225-3940-4440-8c67-908a010079f8" />
   <Project Path="AutoSlot/AutoSlot.csproj" />
 </Solution>

@@ -70,6 +70,8 @@ builder.Services.AddSwaggerGen(options =>
 });
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<VagasService>();
+builder.Services.AddScoped<ReservasService>();
+builder.Services.AddScoped<ConfiguracoesService>();
 
 var app = builder.Build();
 
