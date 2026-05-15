@@ -1,13 +1,13 @@
-using AutoSlot.Data;
-using AutoSlot.DTOs;
-using AutoSlot.Models;
+using AutoSlot.Domain.Models;
+using AutoSlot.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
-namespace AutoSlot.Services;
+namespace AutoSlot.Application.Services;
 
 public class AuthService
 {
@@ -20,12 +20,9 @@ public class AuthService
         _configuration = configuration;
     }
 
-    // Registra um novo funcionário no banco
     public async Task<Funcionario> Registrar(string nome, string email, string senha, string nivelAcesso)
     {
-        // Verifica se já existe um funcionário com esse email
-        var existe = await _context.Funcionarios
-            .AnyAsync(f => f.Email == email);
+        var existe = await _context.Funcionarios.AnyAsync(f => f.Email == email);
 
         if (existe)
             throw new Exception("Email já cadastrado.");
@@ -34,44 +31,29 @@ public class AuthService
         {
             Nome = nome,
             Email = email,
-            SenhaHash = BCrypt.Net.BCrypt.HashPassword(senha), 
+            SenhaHash = BCrypt.Net.BCrypt.HashPassword(senha),
             NivelAcesso = nivelAcesso,
             Ativo = true,
-            CriadoEm = DateTime.UtcNow // ← mudou
+            CriadoEm = DateTime.UtcNow
         };
 
         _context.Funcionarios.Add(funcionario);
 
-        try
-        {
-            await _context.SaveChangesAsync();
-        }
-        catch (Exception ex)
-        {
-            // Mostra o erro completo incluindo o inner exception
-            var mensagemCompleta = ex.InnerException?.Message ?? ex.Message;
-            throw new Exception(mensagemCompleta);
-        }
+        try { await _context.SaveChangesAsync(); }
+        catch (Exception ex) { throw new Exception(ex.InnerException?.Message ?? ex.Message); }
 
-        return funcionario; 
+        return funcionario;
     }
 
-    // Faz login e retorna o token JWT
-    public async Task<string?> Login(LoginDTO dto)
+    public async Task<string?> Login(string email, string senha)
     {
-        // Busca o funcionário pelo email
         var funcionario = await _context.Funcionarios
-            .FirstOrDefaultAsync(f => f.Email == dto.Email && f.Ativo);
+            .FirstOrDefaultAsync(f => f.Email == email && f.Ativo);
 
-        if (funcionario == null)
-            return null; // email não encontrado ou inativo
+        if (funcionario == null) return null;
 
-        // Verifica se a senha está correta
-        bool senhaCorreta = BCrypt.Net.BCrypt.Verify(dto.Senha, funcionario.SenhaHash);
-        if (!senhaCorreta)
-            return null;
+        if (!BCrypt.Net.BCrypt.Verify(senha, funcionario.SenhaHash)) return null;
 
-        // Gera o token JWT
         return GerarToken(funcionario);
     }
 
@@ -81,19 +63,18 @@ public class AuthService
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-        // Claims = informações que ficam dentro do token
         var claims = new[]
         {
             new Claim(ClaimTypes.NameIdentifier, funcionario.Id.ToString()),
             new Claim(ClaimTypes.Email, funcionario.Email),
             new Claim(ClaimTypes.Name, funcionario.Nome),
-            new Claim(ClaimTypes.Role, funcionario.NivelAcesso) // "Admin" ou "Funcionario"
+            new Claim(ClaimTypes.Role, funcionario.NivelAcesso)
         };
 
         var token = new JwtSecurityToken(
             issuer: _configuration["Jwt:Issuer"],
             claims: claims,
-            expires: DateTime.Now.AddHours(8), // token expira em 8 horas
+            expires: DateTime.Now.AddHours(8),
             signingCredentials: creds
         );
 

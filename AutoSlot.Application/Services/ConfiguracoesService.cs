@@ -1,9 +1,8 @@
-﻿using AutoSlot.Data;
-using AutoSlot.DTOs;
-using AutoSlot.Models;
+﻿using AutoSlot.Domain.Models;
+using AutoSlot.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
-namespace AutoSlot.Services;
+namespace AutoSlot.Application.Services;
 
 public class ConfiguracoesService
 {
@@ -14,7 +13,6 @@ public class ConfiguracoesService
         _context = context;
     }
 
-    // Retorna a configuração mais recente
     public async Task<Configuracao?> Obter()
     {
         return await _context.Configuracoes
@@ -22,32 +20,30 @@ public class ConfiguracoesService
             .FirstOrDefaultAsync();
     }
 
-    // Cria ou atualiza a configuração de tarifa e tolerância
-    public async Task<Configuracao> Atualizar(ConfiguracaoDTO dto)
+    public async Task<Configuracao> Atualizar(decimal tarifaPorHora, int minutosTolerancia)
     {
-        if (dto.TarifaPorHora <= 0)
+        if (tarifaPorHora <= 0)
             throw new Exception("A tarifa por hora deve ser maior que zero.");
 
-        if (dto.MinutosTolerancia < 0)
+        if (minutosTolerancia < 0)
             throw new Exception("Os minutos de tolerância não podem ser negativos.");
 
-        // Busca configuração existente para atualizar, ou cria uma nova
         var config = await _context.Configuracoes.FirstOrDefaultAsync();
 
         if (config == null)
         {
             config = new Configuracao
             {
-                TarifaPorHora = dto.TarifaPorHora,
-                MinutosTolerancia = dto.MinutosTolerancia,
+                TarifaPorHora = tarifaPorHora,
+                MinutosTolerancia = minutosTolerancia,
                 AtualizadoEm = DateTime.UtcNow
             };
             _context.Configuracoes.Add(config);
         }
         else
         {
-            config.TarifaPorHora = dto.TarifaPorHora;
-            config.MinutosTolerancia = dto.MinutosTolerancia;
+            config.TarifaPorHora = tarifaPorHora;
+            config.MinutosTolerancia = minutosTolerancia;
             config.AtualizadoEm = DateTime.UtcNow;
         }
 

@@ -1,9 +1,8 @@
-using AutoSlot.Data;
-using AutoSlot.DTOs;
-using AutoSlot.Models;
+using AutoSlot.Domain.Models;
+using AutoSlot.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
-namespace AutoSlot.Services;
+namespace AutoSlot.Application.Services;
 
 public class VagasService
 {
@@ -14,7 +13,6 @@ public class VagasService
         _context = context;
     }
 
-    // Lista todas as vagas ativas
     public async Task<List<Vaga>> ListarTodas()
     {
         return await _context.Vagas
@@ -22,57 +20,43 @@ public class VagasService
             .ToListAsync();
     }
 
-    // Busca uma vaga pelo ID
     public async Task<Vaga?> BuscarPorId(int id)
     {
         return await _context.Vagas
             .FirstOrDefaultAsync(v => v.Id == id);
     }
 
-    // Cria uma nova vaga
-    public async Task<Vaga> Criar(VagaDTO dto)
+    public async Task<Vaga> Criar(string codigo)
     {
-        // Verifica se já existe uma vaga com esse código
-        var existe = await _context.Vagas
-            .AnyAsync(v => v.Codigo == dto.Codigo);
+        var existe = await _context.Vagas.AnyAsync(v => v.Codigo == codigo);
 
         if (existe)
-            throw new Exception($"Já existe uma vaga com o código '{dto.Codigo}'.");
+            throw new Exception($"Já existe uma vaga com o código '{codigo}'.");
 
-        var vaga = new Vaga
-        {
-            Codigo = dto.Codigo,
-            Ativa = true
-        };
-
+        var vaga = new Vaga { Codigo = codigo, Ativa = true };
         _context.Vagas.Add(vaga);
         await _context.SaveChangesAsync();
-
         return vaga;
     }
 
-    // Edita o código de uma vaga
-    public async Task<Vaga> Editar(int id, VagaDTO dto)
+    public async Task<Vaga> Editar(int id, string codigo)
     {
         var vaga = await _context.Vagas.FindAsync(id);
 
         if (vaga == null)
             throw new Exception("Vaga não encontrada.");
 
-        // Verifica se o novo código já está em uso por outra vaga
         var codigoEmUso = await _context.Vagas
-            .AnyAsync(v => v.Codigo == dto.Codigo && v.Id != id);
+            .AnyAsync(v => v.Codigo == codigo && v.Id != id);
 
         if (codigoEmUso)
-            throw new Exception($"Já existe uma vaga com o código '{dto.Codigo}'.");
+            throw new Exception($"Já existe uma vaga com o código '{codigo}'.");
 
-        vaga.Codigo = dto.Codigo;
+        vaga.Codigo = codigo;
         await _context.SaveChangesAsync();
-
         return vaga;
     }
 
-    // Inativa uma vaga (RN01: nunca deletar fisicamente)
     public async Task Inativar(int id)
     {
         var vaga = await _context.Vagas.FindAsync(id);
@@ -80,7 +64,6 @@ public class VagasService
         if (vaga == null)
             throw new Exception("Vaga não encontrada.");
 
-        // Verifica se a vaga tem reservas ativas (ocupada no momento)
         var ocupada = await _context.Reservas
             .AnyAsync(r => r.VagaId == id && r.Saida == null);
 

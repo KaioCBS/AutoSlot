@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using AutoSlot.Models;
+using AutoSlot.Domain.Models;
 
-namespace AutoSlot.Data;
+namespace AutoSlot.Infrastructure.Data;
 
 public class AppDbContext : DbContext
 {
@@ -15,14 +15,12 @@ public class AppDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // Mapeia os nomes das tabelas em minúsculo (como estão no PostgreSQL)
         modelBuilder.Entity<Funcionario>().ToTable("funcionarios");
         modelBuilder.Entity<Vaga>().ToTable("vagas");
         modelBuilder.Entity<Reserva>().ToTable("reservas");
         modelBuilder.Entity<Pagamento>().ToTable("pagamentos");
         modelBuilder.Entity<Configuracao>().ToTable("configuracoes");
 
-        // Mapeia as colunas em minúsculo também
         modelBuilder.Entity<Funcionario>(e =>
         {
             e.Property(f => f.Id).HasColumnName("id");

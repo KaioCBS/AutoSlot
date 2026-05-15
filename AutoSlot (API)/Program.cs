@@ -1,4 +1,4 @@
-using AutoSlot.Application.Services;
+﻿using AutoSlot.Application.Services;
 using AutoSlot.Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;

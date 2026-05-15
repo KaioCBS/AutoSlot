@@ -1,0 +1,16 @@
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Host=localhost;Database=autoslot;Username=postgres;Password=sua_senha"
+  },
+  "Jwt": {
+    "Key": "sua_chave_secreta_aqui_com_pelo_menos_32_caracteres",
+    "Issuer": "AutoSlot"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*"
+}

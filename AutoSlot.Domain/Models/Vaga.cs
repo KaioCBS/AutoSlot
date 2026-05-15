@@ -1,4 +1,4 @@
-﻿namespace AutoSlot.Models;
+﻿namespace AutoSlot.Domain.Models;
 
 public class Vaga
 {
