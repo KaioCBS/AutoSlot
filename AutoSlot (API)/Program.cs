@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -68,6 +70,8 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<VagasService>();
 builder.Services.AddScoped<ReservasService>();
 builder.Services.AddScoped<ConfiguracoesService>();
+builder.Services.AddScoped<DashboardService>();
+builder.Services.AddScoped<RelatoriosService>();
 
 var app = builder.Build();
 

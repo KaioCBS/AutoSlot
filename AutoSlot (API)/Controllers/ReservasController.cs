@@ -18,35 +18,211 @@ public class ReservasController : ControllerBase
         _reservasService = reservasService;
     }
 
-    [HttpPost("entrada")]
-    public async Task<IActionResult> RegistrarEntrada([FromBody] EntradaDTO dto)
+    // POST api/reservas
+    [HttpPost]
+    public async Task<IActionResult> CriarReserva([FromBody] CriarReservaDTO dto)
     {
         try
         {
             var funcionarioId = ObterFuncionarioId();
-            var reserva = await _reservasService.RegistrarEntrada(dto.VagaId, funcionarioId);
-            return Ok(new { mensagem = "Entrada registrada com sucesso!", reservaId = reserva.Id, vagaId = reserva.VagaId, entrada = reserva.Entrada, funcionarioId = reserva.FuncionarioId });
+            var reserva = await _reservasService.CriarReserva(
+                dto.VagaId, funcionarioId,
+                dto.NomeCliente, dto.TelefoneCliente,
+                dto.Placa, dto.ModeloVeiculo,
+                dto.HorarioChegadaPrevisto, dto.HorarioSaidaPrevisto);
+
+            return StatusCode(201, new
+            {
+                reserva = new
+                {
+                    id = reserva.Id,
+                    status = reserva.Status,
+                    nomeCliente = reserva.NomeCliente,
+                    placa = reserva.Placa,
+                    vagaId = reserva.VagaId,
+                    horarioChegadaPrevisto = reserva.HorarioChegadaPrevisto,
+                    horarioSaidaPrevisto = reserva.HorarioSaidaPrevisto,
+                    usuarioCriacaoId = reserva.FuncionarioId
+                }
+            });
         }
         catch (Exception ex) { return BadRequest(new { mensagem = ex.Message }); }
     }
 
-    [HttpPost("saida/{id}")]
-    public async Task<IActionResult> RegistrarSaida(int id)
+    // GET api/reservas
+    [HttpGet]
+    public async Task<IActionResult> Listar(
+        [FromQuery] string? status = null,
+        [FromQuery] string? placa = null,
+        [FromQuery] string? nome = null,
+        [FromQuery] DateTime? inicio = null,
+        [FromQuery] DateTime? fim = null,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
+    {
+        var (reservas, total) = await _reservasService.Listar(status, placa, nome, inicio, fim, page, pageSize);
+        return Ok(new
+        {
+            reservas = reservas.Select(r => new {
+                id = r.Id,
+                status = r.Status,
+                placa = r.Placa,
+                nomeCliente = r.NomeCliente,
+                vagaIdentificacao = r.Vaga?.Codigo,
+                horarioChegadaPrevisto = r.HorarioChegadaPrevisto,
+                horarioSaidaPrevisto = r.HorarioSaidaPrevisto,
+                horarioChegadaReal = r.HorarioChegadaReal,
+                horarioSaidaReal = r.HorarioSaidaReal
+            }),
+            pagination = new { page, pageSize, total }
+        });
+    }
+
+    // GET api/reservas/5
+    [HttpGet("{id}")]
+    public async Task<IActionResult> BuscarPorId(int id)
+    {
+        var reserva = await _reservasService.BuscarPorId(id);
+        if (reserva == null)
+            return NotFound(new { mensagem = "Reserva não encontrada." });
+
+        return Ok(new
+        {
+            reserva = new
+            {
+                id = reserva.Id,
+                status = reserva.Status,
+                nomeCliente = reserva.NomeCliente,
+                telefoneCliente = reserva.TelefoneCliente,
+                placa = reserva.Placa,
+                modeloVeiculo = reserva.ModeloVeiculo,
+                vagaId = reserva.VagaId,
+                vagaIdentificacao = reserva.Vaga?.Codigo,
+                horarioChegadaPrevisto = reserva.HorarioChegadaPrevisto,
+                horarioSaidaPrevisto = reserva.HorarioSaidaPrevisto,
+                horarioChegadaReal = reserva.HorarioChegadaReal,
+                horarioSaidaReal = reserva.HorarioSaidaReal,
+                usuarioCriacaoId = reserva.FuncionarioId
+            }
+        });
+    }
+
+    // PUT api/reservas/5
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Editar(int id, [FromBody] EditarReservaDTO dto)
+    {
+        try
+        {
+            var reserva = await _reservasService.Editar(
+                id, dto.NomeCliente, dto.TelefoneCliente,
+                dto.ModeloVeiculo, dto.HorarioChegadaPrevisto,
+                dto.HorarioSaidaPrevisto, dto.VagaId);
+            return Ok(new { mensagem = "Reserva atualizada com sucesso!", reserva });
+        }
+        catch (Exception ex) { return BadRequest(new { mensagem = ex.Message }); }
+    }
+
+    // POST api/reservas/5/cancelar
+    [HttpPost("{id}/cancelar")]
+    public async Task<IActionResult> Cancelar(int id, [FromBody] CancelarReservaDTO dto)
+    {
+        try
+        {
+            var reserva = await _reservasService.Cancelar(id, dto.Motivo);
+            return Ok(new { mensagem = "Reserva cancelada com sucesso!", reserva });
+        }
+        catch (Exception ex) { return BadRequest(new { mensagem = ex.Message }); }
+    }
+
+    // POST api/reservas/5/checkin
+    [HttpPost("{id}/checkin")]
+    public async Task<IActionResult> CheckIn(int id)
+    {
+        try
+        {
+            var reserva = await _reservasService.CheckIn(id);
+            return Ok(new
+            {
+                reserva = new
+                {
+                    id = reserva.Id,
+                    status = reserva.Status,
+                    horarioChegadaReal = reserva.HorarioChegadaReal,
+                    vagaId = reserva.VagaId
+                }
+            });
+        }
+        catch (Exception ex) { return BadRequest(new { mensagem = ex.Message }); }
+    }
+
+    // POST api/reservas/entrada-direta
+    [HttpPost("entrada-direta")]
+    public async Task<IActionResult> EntradaDireta([FromBody] EntradaDiretaDTO dto)
     {
         try
         {
             var funcionarioId = ObterFuncionarioId();
-            var pagamento = await _reservasService.RegistrarSaida(id, funcionarioId);
-            return Ok(new { mensagem = "Saída registrada e pagamento gerado com sucesso!", pagamentoId = pagamento.Id, reservaId = pagamento.ReservaId, tempoMinutos = pagamento.TempoMinutos, valorCobrado = pagamento.ValorCobrado, registradoEm = pagamento.RegistradoEm });
+            var reserva = await _reservasService.EntradaDireta(
+                dto.VagaId, funcionarioId,
+                dto.Placa, dto.NomeCliente,
+                dto.TelefoneCliente, dto.ModeloVeiculo);
+
+            return StatusCode(201, new
+            {
+                reserva = new
+                {
+                    id = reserva.Id,
+                    status = reserva.Status,
+                    placa = reserva.Placa,
+                    horarioChegadaReal = reserva.HorarioChegadaReal,
+                    vagaId = reserva.VagaId,
+                    usuarioCriacaoId = reserva.FuncionarioId
+                }
+            });
         }
         catch (Exception ex) { return BadRequest(new { mensagem = ex.Message }); }
     }
 
-    [HttpGet("ativas")]
-    public async Task<IActionResult> ListarAtivas()
+    // POST api/reservas/5/checkout
+    [HttpPost("{id}/checkout")]
+    public async Task<IActionResult> Checkout(int id)
     {
-        var reservas = await _reservasService.ListarAtivas();
-        return Ok(reservas);
+        try
+        {
+            var checkout = await _reservasService.Checkout(id);
+            return Ok(new { checkout });
+        }
+        catch (Exception ex) { return BadRequest(new { mensagem = ex.Message }); }
+    }
+
+    // POST api/pagamentos
+    [HttpPost("/api/pagamentos")]
+    public async Task<IActionResult> RegistrarPagamento([FromBody] PagamentoDTO dto)
+    {
+        try
+        {
+            var funcionarioId = ObterFuncionarioId();
+            var pagamento = await _reservasService.RegistrarPagamento(
+                dto.ReservaId, funcionarioId,
+                dto.FormaPagamento, dto.ValorRecebido);
+
+            return StatusCode(201, new
+            {
+                pagamento = new
+                {
+                    id = pagamento.Id,
+                    reservaId = pagamento.ReservaId,
+                    valorCobrado = pagamento.ValorCobrado,
+                    formaPagamento = pagamento.FormaPagamento,
+                    valorRecebido = pagamento.ValorRecebido,
+                    troco = pagamento.Troco,
+                    tarifaId = pagamento.TarifaId,
+                    usuarioRegistroId = pagamento.FuncionarioId,
+                    createdAt = pagamento.RegistradoEm
+                }
+            });
+        }
+        catch (Exception ex) { return BadRequest(new { mensagem = ex.Message }); }
     }
 
     private int ObterFuncionarioId()
