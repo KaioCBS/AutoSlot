@@ -7,10 +7,12 @@ namespace AutoSlot.Application.Services;
 public class VagasService
 {
     private readonly AppDbContext _context;
+    private readonly AuditoriaService _auditoriaService;
 
-    public VagasService(AppDbContext context)
+    public VagasService(AppDbContext context, AuditoriaService auditoriaService)
     {
         _context = context;
+        _auditoriaService = auditoriaService;
     }
 
     public async Task<List<Vaga>> ListarTodas(string? status = null)
@@ -35,7 +37,7 @@ public class VagasService
         return await _context.Vagas.ToListAsync();
     }
 
-    public async Task<Vaga> Criar(string codigo, string tipoVaga, int posicaoX, int posicaoY)
+    public async Task<Vaga> Criar(string codigo, string tipoVaga, int posicaoX, int posicaoY, int usuarioId)
     {
         var existe = await _context.Vagas.AnyAsync(v => v.Codigo == codigo);
         if (existe)
@@ -52,10 +54,16 @@ public class VagasService
 
         _context.Vagas.Add(vaga);
         await _context.SaveChangesAsync();
+
+        await _auditoriaService.Registrar(
+            usuarioId, "CREATE", "VAGA",
+            vaga.Id.ToString(),
+            $"Vaga '{codigo}' criada");
+
         return vaga;
     }
 
-    public async Task<Vaga> Editar(int id, string codigo, string tipoVaga, int posicaoX, int posicaoY)
+    public async Task<Vaga> Editar(int id, string codigo, string tipoVaga, int posicaoX, int posicaoY, int usuarioId = 0)
     {
         var vaga = await _context.Vagas.FindAsync(id);
         if (vaga == null)
@@ -68,16 +76,27 @@ public class VagasService
         if (codigoEmUso)
             throw new Exception($"Já existe uma vaga com o código '{codigo}'.");
 
+        var dadosAntes = $"codigo={vaga.Codigo}, tipo={vaga.TipoVaga}";
+
         vaga.Codigo = codigo;
         vaga.TipoVaga = tipoVaga;
         vaga.PosicaoX = posicaoX;
         vaga.PosicaoY = posicaoY;
 
         await _context.SaveChangesAsync();
+
+        if (usuarioId > 0)
+            await _auditoriaService.Registrar(
+                usuarioId, "UPDATE", "VAGA",
+                vaga.Id.ToString(),
+                $"Vaga '{codigo}' editada",
+                dadosAntes,
+                $"codigo={codigo}, tipo={tipoVaga}");
+
         return vaga;
     }
 
-    public async Task Inativar(int id)
+    public async Task Inativar(int id, int usuarioId = 0)
     {
         var vaga = await _context.Vagas.FindAsync(id);
         if (vaga == null)
@@ -88,9 +107,15 @@ public class VagasService
 
         vaga.Status = "INATIVA";
         await _context.SaveChangesAsync();
+
+        if (usuarioId > 0)
+            await _auditoriaService.Registrar(
+                usuarioId, "UPDATE", "VAGA",
+                vaga.Id.ToString(),
+                $"Vaga '{vaga.Codigo}' inativada");
     }
 
-    public async Task Reativar(int id)
+    public async Task Reativar(int id, int usuarioId = 0)
     {
         var vaga = await _context.Vagas.FindAsync(id);
         if (vaga == null)
@@ -101,9 +126,15 @@ public class VagasService
 
         vaga.Status = "LIVRE";
         await _context.SaveChangesAsync();
+
+        if (usuarioId > 0)
+            await _auditoriaService.Registrar(
+                usuarioId, "UPDATE", "VAGA",
+                vaga.Id.ToString(),
+                $"Vaga '{vaga.Codigo}' reativada");
     }
 
-    public async Task Excluir(int id)
+    public async Task Excluir(int id, int usuarioId = 0)
     {
         var vaga = await _context.Vagas.FindAsync(id);
         if (vaga == null)
@@ -115,6 +146,12 @@ public class VagasService
         var temHistorico = await _context.Reservas.AnyAsync(r => r.VagaId == id);
         if (temHistorico)
             throw new Exception("Esta vaga possui histórico de reservas e não pode ser excluída. Use a inativação.");
+
+        if (usuarioId > 0)
+            await _auditoriaService.Registrar(
+                usuarioId, "DELETE", "VAGA",
+                vaga.Id.ToString(),
+                $"Vaga '{vaga.Codigo}' excluída");
 
         _context.Vagas.Remove(vaga);
         await _context.SaveChangesAsync();

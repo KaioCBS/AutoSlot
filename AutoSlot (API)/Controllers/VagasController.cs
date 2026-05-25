@@ -2,6 +2,7 @@ using AutoSlot.Application.Services;
 using AutoSlot.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace AutoSlot.Controllers;
 
@@ -17,7 +18,6 @@ public class VagasController : ControllerBase
         _vagasService = vagasService;
     }
 
-    // GET api/vagas?status=LIVRE
     [HttpGet]
     public async Task<IActionResult> ListarTodas([FromQuery] string? status = null)
     {
@@ -25,7 +25,6 @@ public class VagasController : ControllerBase
         return Ok(new { vagas });
     }
 
-    // GET api/vagas/mapa
     [HttpGet("mapa")]
     public async Task<IActionResult> Mapa()
     {
@@ -33,7 +32,6 @@ public class VagasController : ControllerBase
         return Ok(new { vagas });
     }
 
-    // GET api/vagas/5
     [HttpGet("{id}")]
     public async Task<IActionResult> BuscarPorId(int id)
     {
@@ -43,68 +41,78 @@ public class VagasController : ControllerBase
         return Ok(vaga);
     }
 
-    // POST api/vagas
     [HttpPost]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Criar([FromBody] VagaDTO dto)
     {
         try
         {
-            var vaga = await _vagasService.Criar(dto.Codigo, dto.TipoVaga, dto.PosicaoX, dto.PosicaoY);
+            var usuarioId = ObterFuncionarioId();
+            var vaga = await _vagasService.Criar(
+                dto.Codigo, dto.TipoVaga, dto.PosicaoX, dto.PosicaoY, usuarioId);
             return StatusCode(201, new { mensagem = "Vaga criada com sucesso!", vaga });
         }
         catch (Exception ex) { return BadRequest(new { mensagem = ex.Message }); }
     }
 
-    // PUT api/vagas/5
     [HttpPut("{id}")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Editar(int id, [FromBody] VagaDTO dto)
     {
         try
         {
-            var vaga = await _vagasService.Editar(id, dto.Codigo, dto.TipoVaga, dto.PosicaoX, dto.PosicaoY);
+            var usuarioId = ObterFuncionarioId();
+            var vaga = await _vagasService.Editar(
+                id, dto.Codigo, dto.TipoVaga, dto.PosicaoX, dto.PosicaoY, usuarioId);
             return Ok(new { mensagem = "Vaga atualizada com sucesso!", vaga });
         }
         catch (Exception ex) { return BadRequest(new { mensagem = ex.Message }); }
     }
 
-    // PATCH api/vagas/5/inativar
     [HttpPatch("{id}/inativar")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Inativar(int id)
     {
         try
         {
-            await _vagasService.Inativar(id);
+            var usuarioId = ObterFuncionarioId();
+            await _vagasService.Inativar(id, usuarioId);
             return Ok(new { mensagem = "Vaga inativada com sucesso!" });
         }
         catch (Exception ex) { return BadRequest(new { mensagem = ex.Message }); }
     }
 
-    // PATCH api/vagas/5/reativar
     [HttpPatch("{id}/reativar")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Reativar(int id)
     {
         try
         {
-            await _vagasService.Reativar(id);
+            var usuarioId = ObterFuncionarioId();
+            await _vagasService.Reativar(id, usuarioId);
             return Ok(new { mensagem = "Vaga reativada com sucesso!" });
         }
         catch (Exception ex) { return BadRequest(new { mensagem = ex.Message }); }
     }
 
-    // DELETE api/vagas/5
     [HttpDelete("{id}")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Excluir(int id)
     {
         try
         {
-            await _vagasService.Excluir(id);
+            var usuarioId = ObterFuncionarioId();
+            await _vagasService.Excluir(id, usuarioId);
             return Ok(new { mensagem = "Vaga excluída com sucesso!" });
         }
         catch (Exception ex) { return BadRequest(new { mensagem = ex.Message }); }
+    }
+
+    private int ObterFuncionarioId()
+    {
+        var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(claim) || !int.TryParse(claim, out int id))
+            throw new Exception("Funcionário não identificado no token.");
+        return id;
     }
 }

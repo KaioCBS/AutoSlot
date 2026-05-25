@@ -72,6 +72,7 @@ builder.Services.AddScoped<ReservasService>();
 builder.Services.AddScoped<ConfiguracoesService>();
 builder.Services.AddScoped<DashboardService>();
 builder.Services.AddScoped<RelatoriosService>();
+builder.Services.AddScoped<AuditoriaService>();
 
 var app = builder.Build();
 
