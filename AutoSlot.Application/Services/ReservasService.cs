@@ -241,9 +241,10 @@ public class ReservasService
         if (totalMinutos > minutosTolerancia)
         {
             var minutosCobraveis = totalMinutos - minutosTolerancia;
-            horasCobradas = (int)Math.Ceiling(minutosCobraveis / 60.0);
+            horasCobradas = (int)Math.Ceiling(minutosCobraveis / 30.0);
             valorFinal = horasCobradas * tarifa.ValorHora;
         }
+
 
         return new
         {
@@ -287,7 +288,7 @@ public class ReservasService
         if (totalMinutos > tarifa.MinutosTolerancia)
         {
             var minutosCobraveis = totalMinutos - tarifa.MinutosTolerancia;
-            var horasCobradas = (int)Math.Ceiling(minutosCobraveis / 60.0);
+            var horasCobradas = (int)Math.Ceiling(minutosCobraveis / 30.0);
             valorFinal = horasCobradas * tarifa.ValorHora;
         }
 
