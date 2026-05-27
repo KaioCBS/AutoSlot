@@ -18,7 +18,6 @@ public class ReservasController : ControllerBase
         _reservasService = reservasService;
     }
 
-    // POST api/reservas
     [HttpPost]
     public async Task<IActionResult> CriarReserva([FromBody] CriarReservaDTO dto)
     {
@@ -49,7 +48,6 @@ public class ReservasController : ControllerBase
         catch (Exception ex) { return BadRequest(new { mensagem = ex.Message }); }
     }
 
-    // GET api/reservas
     [HttpGet]
     public async Task<IActionResult> Listar(
         [FromQuery] string? status = null,
@@ -63,7 +61,8 @@ public class ReservasController : ControllerBase
         var (reservas, total) = await _reservasService.Listar(status, placa, nome, inicio, fim, page, pageSize);
         return Ok(new
         {
-            reservas = reservas.Select(r => new {
+            reservas = reservas.Select(r => new
+            {
                 id = r.Id,
                 status = r.Status,
                 placa = r.Placa,
@@ -78,7 +77,6 @@ public class ReservasController : ControllerBase
         });
     }
 
-    // GET api/reservas/5
     [HttpGet("{id}")]
     public async Task<IActionResult> BuscarPorId(int id)
     {
@@ -107,14 +105,15 @@ public class ReservasController : ControllerBase
         });
     }
 
-    // PUT api/reservas/5
     [HttpPut("{id}")]
     public async Task<IActionResult> Editar(int id, [FromBody] EditarReservaDTO dto)
     {
         try
         {
+            var funcionarioId = ObterFuncionarioId();
             var reserva = await _reservasService.Editar(
-                id, dto.NomeCliente, dto.TelefoneCliente,
+                id, funcionarioId,
+                dto.NomeCliente, dto.TelefoneCliente,
                 dto.ModeloVeiculo, dto.HorarioChegadaPrevisto,
                 dto.HorarioSaidaPrevisto, dto.VagaId);
             return Ok(new { mensagem = "Reserva atualizada com sucesso!", reserva });
@@ -122,25 +121,25 @@ public class ReservasController : ControllerBase
         catch (Exception ex) { return BadRequest(new { mensagem = ex.Message }); }
     }
 
-    // POST api/reservas/5/cancelar
     [HttpPost("{id}/cancelar")]
     public async Task<IActionResult> Cancelar(int id, [FromBody] CancelarReservaDTO dto)
     {
         try
         {
-            var reserva = await _reservasService.Cancelar(id, dto.Motivo);
+            var funcionarioId = ObterFuncionarioId();
+            var reserva = await _reservasService.Cancelar(id, funcionarioId, dto.Motivo);
             return Ok(new { mensagem = "Reserva cancelada com sucesso!", reserva });
         }
         catch (Exception ex) { return BadRequest(new { mensagem = ex.Message }); }
     }
 
-    // POST api/reservas/5/checkin
     [HttpPost("{id}/checkin")]
     public async Task<IActionResult> CheckIn(int id)
     {
         try
         {
-            var reserva = await _reservasService.CheckIn(id);
+            var funcionarioId = ObterFuncionarioId();
+            var reserva = await _reservasService.CheckIn(id, funcionarioId);
             return Ok(new
             {
                 reserva = new
@@ -155,7 +154,6 @@ public class ReservasController : ControllerBase
         catch (Exception ex) { return BadRequest(new { mensagem = ex.Message }); }
     }
 
-    // POST api/reservas/entrada-direta
     [HttpPost("entrada-direta")]
     public async Task<IActionResult> EntradaDireta([FromBody] EntradaDiretaDTO dto)
     {
@@ -183,7 +181,6 @@ public class ReservasController : ControllerBase
         catch (Exception ex) { return BadRequest(new { mensagem = ex.Message }); }
     }
 
-    // POST api/reservas/5/checkout
     [HttpPost("{id}/checkout")]
     public async Task<IActionResult> Checkout(int id)
     {
@@ -195,7 +192,6 @@ public class ReservasController : ControllerBase
         catch (Exception ex) { return BadRequest(new { mensagem = ex.Message }); }
     }
 
-    // POST api/pagamentos
     [HttpPost("/api/pagamentos")]
     public async Task<IActionResult> RegistrarPagamento([FromBody] PagamentoDTO dto)
     {

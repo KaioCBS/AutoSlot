@@ -2,8 +2,9 @@
 
 public class TarifaDTO
 {
-    public decimal ValorHora { get; set; }
-    public int MinutosTolerancia { get; set; }
+    public decimal ValorMinimo { get; set; }
+    public decimal ValorIncremento { get; set; }
+    public int MinutosFaixa { get; set; }
     public DateTime DataVigencia { get; set; }
     public string Status { get; set; } = "INATIVA";
 }

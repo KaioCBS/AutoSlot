@@ -48,12 +48,12 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Tarifa>(e =>
         {
             e.Property(t => t.Id).HasColumnName("id");
-            e.Property(t => t.ValorHora).HasColumnName("valor_hora");
-            e.Property(t => t.MinutosTolerancia).HasColumnName("minutos_tolerancia");
+            e.Property(t => t.ValorMinimo).HasColumnName("valor_minimo");
+            e.Property(t => t.ValorIncremento).HasColumnName("valor_incremento");
+            e.Property(t => t.MinutosFaixa).HasColumnName("minutos_faixa");
             e.Property(t => t.DataVigencia).HasColumnName("data_vigencia");
             e.Property(t => t.Status).HasColumnName("status");
-            e.Property(t => t.CriadoEm).HasColumnName("criado_em")
-                .HasColumnType("timestamp");
+            e.Property(t => t.CriadoEm).HasColumnName("criado_em").HasColumnType("timestamp");
         });
 
         modelBuilder.Entity<Reserva>(e =>
